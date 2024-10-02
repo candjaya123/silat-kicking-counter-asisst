@@ -3,8 +3,26 @@ from module.landmark import Value
 from module import tool as get
 from module.tool import Play_buzzer
 import cv2
+import enum 
+
+class State(enum.Enum):
+    INITIAL = 1
+    KUDA2 = 2
+    TRANSISI = 3
+    AKHIR = 4
+
+def Check(frame, name):
+    buffer = Value(frame,name)
+    if buffer == None or buffer[3] == False:
+        return False
+    
+    return buffer[3]
 
 def main():
+    face = False
+    body = False
+    leg = False
+    current_state = State.INITIAL   
     # Open the webcam (0 is the default camera)
     cap = cv2.VideoCapture(0)
     
@@ -37,10 +55,36 @@ def main():
         r_sholder_nose_distance = get.Distance(Value(frame,"nose"),Value(frame,"r_shoulder"))
         l_sholder_nose_distance = get.Distance(Value(frame,"nose"),Value(frame,"l_shoulder"))
 
+        match current_state:
+            case State.INITIAL:
+                print("Current state: Initial")
+                if Check(frame, "nose") and Check(frame, "r_ear") and Check(frame, "l_ear") and Check(frame, "r_ear"):
+                    face = True
+                if Check(frame, "l_shoulder") and Check(frame, "r_shoulder") and Check(frame, "l_hip") and Check(frame, "r_hip"):
+                    body = True
+                if Check(frame, "nose") and Check(frame, "r_ear") and Check(frame, "l_ear") and Check(frame, "r_ear"):
+                    leg = True
+                if face and body and leg:
+                    current_state = State.KUDA2
 
-        # angel_test = get.Angle(Value(frame,"r_shoulder"),Value(frame,"r_elbow"),Value(frame,"r_wrist"))
-        # cv2.putText(frame, f"Angle: {angel_test:.2f}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+            case State.KUDA2:
+                print("Current state: Kuda2")
+                # Logic for kuda2 state
+                current_state = State.TRANSISI
 
+            case State.TRANSISI:
+                print("Current state: Transisi")
+                # Logic for transisi state
+                current_state = State.AKHIR
+
+            case State.AKHIR:
+                print("Current state: Akhir")
+                # Logic for akhir state
+                current_state = State.INITIAL
+
+            case _:
+                print("Error: Unrecognized state.")
+                break  # Optional: exit loop on unrecognized state
 
 
         cv2.imshow('Webcam Feed', frame)
