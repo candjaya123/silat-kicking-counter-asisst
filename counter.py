@@ -71,7 +71,7 @@ def main():
                 print("Current state: Kuda2")
                 # Logic for kuda2 state
                 current_state = State.TRANSISI
-kvjbdfsdfjhbg
+
             case State.TRANSISI:
                 print("Current state: Transisi")
                 # Logic for transisi state
