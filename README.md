@@ -7,7 +7,8 @@ This project analyzes kicking movements in silat using computer vision technique
 The output video showcasing the analyzed kicks can be found at:
 
 [View Output Video](./video_testing/output_video.mp4)
-https://github.com/candjaya123/silat-kicking-counter-asisst/blob/main/video_testing/output_video.mp4
+
+https://github.com/user-attachments/assets/a5eea1ad-6688-47d0-aa54-1c730bc98768
 
 ### How to Run
 
