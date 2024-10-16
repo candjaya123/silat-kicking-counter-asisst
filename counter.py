@@ -92,7 +92,8 @@ def main():
     tendangan_counter = 0  # Counter untuk menghitung jumlah tendangan
 
     # Menggunakan video file sebagai input
-    video_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/video_testing/Tendangan_Depan_Kanan.mp4"
+    video_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/raw_video/Tendangan_Depan_Kanan.mp4"
+    output_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/video_testing/Processed_Tendangan_Depan_Kanan.mp4"
     cap = cv2.VideoCapture(video_path)
 
     if not cap.isOpened():
@@ -100,8 +101,21 @@ def main():
         return
     
     prev_frame_time = 0
-    frame_skip = 3  # Skipping every 3rd frame to improve performance
+    frame_skip = 4  # Skipping every 3rd frame to improve performance
     frame_count = 0
+
+    original_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    original_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
+    # Set the new dimensions for the resized frame
+    resize_factor = 0.5  # Resize factor
+    new_width = int(original_width * resize_factor)
+    new_height = int(original_height * resize_factor)
+
+    # Create a VideoWriter object for saving the output video
+    output_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/video_testing/output_video.mp4"
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for MP4
+    out = cv2.VideoWriter(output_path, fourcc, 20, (new_width, new_height))  # 20 FPS
 
     while True:
         ret, frame = cap.read()
@@ -170,6 +184,7 @@ def main():
 
         # Show the processed video frame
         cv2.imshow('Video Feed', frame)
+        out.write(frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
