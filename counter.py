@@ -79,6 +79,18 @@ def kick():
     elif position + " " + kick_type == "left front kick":
         if r_hip_angle < 100 and r_knee_angle > 100:  # Atur threshold sesuai kebutuhan
             return True
+    elif position + " " + kick_type == "right T kick":
+        if r_hip_angle < 100 and r_knee_angle > 100:  # Atur threshold sesuai kebutuhan
+            return True
+    elif position + " " + kick_type == "left T kick":
+        if r_hip_angle < 100 and r_knee_angle > 100:  # Atur threshold sesuai kebutuhan
+            return True
+    elif position + " " + kick_type == "right side kick":
+        if r_hip_angle < 100 and r_knee_angle > 100:  # Atur threshold sesuai kebutuhan
+            return True
+    elif position + " " + kick_type == "left side kick":
+        if r_hip_angle < 100 and r_knee_angle > 100:  # Atur threshold sesuai kebutuhan
+            return True
     # Add additional conditions for other kick types if necessary
     return False
 

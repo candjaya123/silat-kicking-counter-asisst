@@ -8,8 +8,7 @@ The output video showcasing the analyzed kicks can be found at:
 
 [View Output Video](./video_testing/output_video.mp4)
 
-https://github.com/user-attachments/assets/a5eea1ad-6688-47d0-aa54-1c730bc98768
-
+https://github.com/candjaya123/silat-kicking-counter-asisst/tree/main/video_testing/output_video.mp4
 ### How to Run
 
 1. Ensure you have the necessary dependencies installed. You can use `pip` to install the required packages:
