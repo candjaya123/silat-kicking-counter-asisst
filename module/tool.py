@@ -25,9 +25,10 @@ def Angle(var1, var2, var3):
     return np.abs(np.degrees(theta))
 
 def Y_angle(b, c):
-    if b == None or c == None or b[3] == False or c[3] == False:
+    if b is None or c is None:
         return 0
-    print(f'b[{b}] - b[{c}]')
+
+    # Extracting the y-coordinates
     B, C = np.array(b), np.array(c)
     ab = -B[1] * (C[1] - B[1])
     
