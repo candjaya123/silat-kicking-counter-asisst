@@ -20,7 +20,7 @@ mp_pose = mp.solutions.pose
 # Helper function to calculate angles, foot distance, and slopes
 def process_landmarks(landmarks, w, h):
     global l_knee_angle, r_knee_angle, r_hip_angle, l_hip_angle, foot_distance, shoulder_slope, hip_slope, shoulder_distance, crossing_leg, hip_distance, facing
-    
+
     # Left side landmarks
     LHip  = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].x * w, landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].y * h]
     LKnee = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_KNEE.value].x * w, landmarks[mp.solutions.pose.PoseLandmark.LEFT_KNEE.value].y * h]
@@ -51,7 +51,7 @@ def process_landmarks(landmarks, w, h):
     hip_distance = get.Distance(LHip, RHip)
 
     # Detect crossing leg
-    if hip_distance > 40:
+    if hip_distance > 30:
         if (RHip[0] < LHip[0] and RAnkle[0] > LAnkle[0]):  # Check if left ankle is opposite to the right hip and vice versa
             crossing_leg = True
         else:
@@ -72,7 +72,9 @@ def process_landmarks(landmarks, w, h):
 def main():
     global l_knee_angle, r_knee_angle, r_hip_angle, l_hip_angle, foot_distance, shoulder_slope, hip_slope, shoulder_distance, crossing_leg
 
-    image_path = "./tes_img/back_depan_kanan.png"
+    image_path = "./tes_img/sabit_kiri/tendang.png"
+    output_path = "./tes_img/output/tendang_sabit_kiri.png"  # Path to save the processed image
+
     frame = cv2.imread(image_path)
 
     if frame is None:
@@ -115,6 +117,10 @@ def main():
         cv2.putText(frame, f"hip_distance: {hip_distance:.2f}", (30, 320), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
         cv2.putText(frame, f"facing: {facing}", (30, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
         cv2.putText(frame, f"Crossing Leg: {'Yes' if crossing_leg else 'No'}", (30, 380), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+        # Save the processed image
+        cv2.imwrite(output_path, frame)
+        print(f"Processed image saved to {output_path}")
 
         # Display the processed image
         cv2.imshow('Angle, Distance & Slope Info', frame)
