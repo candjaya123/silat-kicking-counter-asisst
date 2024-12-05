@@ -20,6 +20,7 @@ mp_pose = mp.solutions.pose
 # Helper function to calculate angles, foot distance, and slopes
 def process_landmarks(landmarks, w, h):
     global l_knee_angle, r_knee_angle, r_hip_angle, l_hip_angle, foot_distance, shoulder_slope, hip_slope, shoulder_distance, crossing_leg, hip_distance, facing
+    global l_hip, l_knee, l_ankle, r_hip, r_knee, r_ankle
 
     # Left side landmarks
     LHip  = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].x * w, landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].y * h]
@@ -34,6 +35,9 @@ def process_landmarks(landmarks, w, h):
     # Shoulder landmarks
     LShoulder = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value].x * w, landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value].y * h]
     RShoulder = [landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value].x * w, landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value].y * h]
+
+    l_hip, l_knee, l_ankle = LHip, LKnee, LAnkle
+    r_hip, r_knee, r_ankle = RHip, RKnee, RAnkle
 
     # Calculate distances and angles
     foot_distance = get.Distance(LAnkle, RAnkle)
@@ -72,8 +76,8 @@ def process_landmarks(landmarks, w, h):
 def main():
     global l_knee_angle, r_knee_angle, r_hip_angle, l_hip_angle, foot_distance, shoulder_slope, hip_slope, shoulder_distance, crossing_leg
 
-    image_path = "./tes_img/sabit_kiri/tendang.png"
-    output_path = "./tes_img/output/tendang_sabit_kiri.png"  # Path to save the processed image
+    image_path = "./img_test/kanan_depan/kuda.png"
+    output_path = "./test_result/kuda.png"  # Path to save the processed image
 
     frame = cv2.imread(image_path)
 
@@ -117,6 +121,8 @@ def main():
         cv2.putText(frame, f"hip_distance: {hip_distance:.2f}", (30, 320), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
         cv2.putText(frame, f"facing: {facing}", (30, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
         cv2.putText(frame, f"Crossing Leg: {'Yes' if crossing_leg else 'No'}", (30, 380), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        # cv2.putText(frame, f"l_ankle = {l_ankle[1]:.2f} | l_knee = {l_knee[1]:.2f}", (30, 410), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        # cv2.putText(frame, f"r_ankle = {r_ankle[1]:.2f} | r_knee = {r_knee[1]:.2f}", (30, 440), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
         # Save the processed image
         cv2.imwrite(output_path, frame)

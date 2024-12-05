@@ -30,8 +30,6 @@ l_ankle = None
 kick_type = "not detected"
 position = "not detected"
 facing = "not detected"
-feedback_kanan = "none"
-feedback_kiri = "none"
 
 shoulder_slope = 0
 hip_slope = 0
@@ -44,7 +42,7 @@ mp_pose = mp.solutions.pose
 
 # Helper function to calculate all necessary landmarks and store globally
 def process_landmarks(landmarks, w, h):
-    global l_knee_angle, r_knee_angle, r_hip_angle, l_hip_angle, foot_distance, shoulder_slope, hip_slope, shoulder_distance, crossing_leg, hip_distance, facing, position,l_hip, l_knee, l_ankle
+    global l_knee_angle, r_knee_angle, r_hip_angle, l_hip_angle, foot_distance, shoulder_slope, hip_slope, shoulder_distance, crossing_leg, hip_distance, facing, l_hip, l_knee, l_ankle
     global l_hip, l_knee, l_ankle, r_hip, r_knee, r_ankle
     
     # Left side landmarks
@@ -97,87 +95,72 @@ def process_landmarks(landmarks, w, h):
     else:
         facing = "left"   # Nose closer to right shoulder, facing left
 
-    if r_knee[0] > l_knee[0] :
-        position = "left" if facing == "right" else "right"
-    elif l_knee[0] > r_knee[0] :
-        position = "right" if facing == "right" else "left"
-
 # Functions for each state (KUDA2, TRANSISI, TENDANG, etc.)
 def kuda_kuda():
-    global position, feedback_kanan, feedback_kiri
-    if (l_ankle[1] < l_knee[1] and r_ankle[1] < r_knee[1] and l_ankle[1] < r_knee[1] and r_ankle[1] < l_knee[1]) or foot_distance < 140:
-        return False
+    global position
+    if l_ankle[1] > l_knee[1] and r_ankle[1] > r_knee[1] and l_ankle[1] > r_knee[1] and r_ankle[1] > l_knee[1]:
+        if facing == "right":
+            if r_knee and l_knee and r_knee[0] > l_knee[0]: #kanan depan
+                position = "left"
+                if 90 < r_knee_angle < 150 and 150 < l_knee_angle < 180 and foot_distance > 140:
+                    return True
+            elif r_knee and l_knee and l_knee[0] > r_knee[0]: #kiri depan
+                position = "right"
+                if 120 < l_knee_angle < 165 and 150 < r_knee_angle < 180 and foot_distance > 140:
+                    return True
 
-    if position == "left":
-        if 100 < r_knee_angle < 150 and 150 < l_knee_angle < 180 :
-            feedback_kanan = "pas" 
-            feedback_kiri = "pas"
-            return True
-        elif r_knee_angle > 150:
-            feedback_kanan = "kaki kanan kurang nekuk"
-            return False
-        elif r_knee_angle < 100:
-            feedback_kiri = "kaki kanan terlalu nekuk"
-            return False
-        elif l_knee_angle < 150:
-            feedback_kiri = "kaki kiri kurang lurus"
-            return False
-        
-    elif position == "right":
-        if 100 < l_knee_angle < 150 and 150 < r_knee_angle < 180:
-            feedback_kanan = "pas" 
-            feedback_kiri = "pas"
-            return True
-        elif l_knee_angle > 150:
-            feedback_kiri = "kaki kiri kurang nekuk"
-            return False
-        elif l_knee_angle < 100:
-            feedback_kiri = "kaki kiri terlalu nekuk"
-            return False
-        elif r_knee_angle < 150:
-            feedback_kanan = "kaki kanan kurang lurus"
-            return False
-    
+        elif facing == "left":
+            if r_knee and l_knee and l_knee[0] > r_knee[0]: #kanan depan
+                position = "left"
+                if 100 < r_knee_angle < 165 and 150 < l_knee_angle < 180 and foot_distance > 140:
+                    return True
+            elif r_knee and l_knee and r_knee[0] > l_knee[0]: #kiri depan
+                position = "right"
+                if 100 < l_knee_angle < 165 and 150 < r_knee_angle < 180 and foot_distance > 140:
+                    return True
     return False
 
 def transisi():
-    global kick_type, feedback_kanan, feedback_kiri
+    global kick_type
     print(f"crossing_leg = {crossing_leg}")
     if crossing_leg:
         kick_type = "T kick"
         return True
     else:
-        kick_type = "front kick" if (hip_distance < 20 and shoulder_distance) < 30 else "sickle kick"
-
         if position == "right":
-            if r_knee and r_hip and r_knee[1] <= r_hip[1] and r_knee_angle < 150 and r_hip_angle < 110:  # y-coordinates, smaller means higher
-                return True
-            elif r_knee_angle > 150:
-                feedback_kanan = "kaki kanan kurang nekuk"
-                return False
-            elif r_hip_angle > 110:
-                feedback_kanan = "kaki kanan kurang naik"
-                return False
+            if r_knee and r_hip and r_knee[1] <= r_hip[1] and r_knee_angle < 150 and r_hip_angle < 150:  # y-coordinates, smaller means higher
+                if  hip_distance < 20 and shoulder_distance < 30:  # Kaki terangkat tapi belum sepenuhnya lurus
+                    kick_type = "front kick"
+                    return True
+                elif hip_distance > 20 and shoulder_distance > 30:
+                    kick_type = "sickle kick"
+                    return True
         elif position == "left":
-            if l_knee and l_hip and l_knee[1] <= l_hip[1] and l_knee_angle < 150 and l_hip_angle < 110:  # y-coordinates, smaller means higher
-                return True
-            elif l_knee_angle > 150:
-                feedback_kiri = "kaki kiri kurang nekuk"
-                return False
-            elif l_hip_angle > 110:
-                feedback_kiri = "kaki kiri kurang naik"
-                return False
-            
+            if l_knee and l_hip and l_knee[1] <= l_hip[1] and l_knee_angle < 150 and l_hip_angle < 150:  # y-coordinates, smaller means higher
+                if hip_distance < 20 and shoulder_distance < 40:  # Kaki terangkat tapi belum sepenuhnya lurus
+                    kick_type = "front kick"
+                    return True
+                elif hip_distance > 20 and shoulder_distance > 40:
+                    kick_type = "sickle kick"
+                    return True
     return False
 
 def kick():
-    global feedback_kanan, feedback_kiri
-    if l_knee_angle < 160:
-        feedback_kiri = "kaki kiri kurang lurus"
-        return False
-    if r_knee_angle < 160:
-        feedback_kanan = "kaki kanan kurang lurus"
-        return False
+    if position + " " + kick_type == "right front kick":
+        if l_hip_angle > 150 and r_hip_angle < 100 and l_knee_angle > 150 and r_knee_angle > 160:  # Atur threshold sesuai kebutuhan
+            return True
+    elif position + " " + kick_type == "left front kick":
+        if r_hip_angle > 150 and l_hip_angle < 100 and r_knee_angle > 150 and l_knee_angle > 160:  # Atur threshold sesuai kebutuhan
+            return True
+    elif position + " " + kick_type == "right sickle kick":
+        if 150 < r_hip_angle > 110 and l_hip_angle < 110 and r_knee_angle > 160 and l_knee_angle > 160:  # Atur threshold sesuai kebutuhan
+            return True
+    elif position + " " + kick_type == "left sickle kick":
+        if 150 < l_hip_angle > 110 and r_hip_angle < 110 and r_knee_angle > 160 and l_knee_angle > 160:  # Atur threshold sesuai kebutuhan
+            return True
+    elif position + " " + kick_type == "right T kick" or position + " " + kick_type == "left T kick" :
+        if r_knee_angle > 160 and l_knee_angle > 160:  # Atur threshold sesuai kebutuhan
+            return True
     
     # Add additional conditions for other kick types if necessary
     return False
@@ -190,6 +173,7 @@ def back(position):
         elif position == "left" :
             if r_hip[0] > l_hip[0] and r_ankle[0] > l_ankle[0]:
                 return True
+        return True
     return False
 
 # Main function
