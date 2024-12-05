@@ -76,8 +76,8 @@ def process_landmarks(landmarks, w, h):
 def main():
     global l_knee_angle, r_knee_angle, r_hip_angle, l_hip_angle, foot_distance, shoulder_slope, hip_slope, shoulder_distance, crossing_leg
 
-    image_path = "./img_test/kanan_depan/kuda.png"
-    output_path = "./test_result/kuda.png"  # Path to save the processed image
+    image_path = "./img_test/kanan_depan/tendang.png"
+    output_path = "./test_result/transisi.png"  # Path to save the processed image
 
     frame = cv2.imread(image_path)
 

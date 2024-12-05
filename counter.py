@@ -30,14 +30,17 @@ l_ankle = None
 kick_type = "not detected"
 position = "not detected"
 facing = "not detected"
-feedback_kanan = "none"
-feedback_kiri = "none"
+feedback = "none"
 
 shoulder_slope = 0
 hip_slope = 0
 shoulder_distance = 0
 crossing_leg = False
 hip_distance = 0
+
+kuda = False
+tendang = False
+transisi = False
 
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
@@ -104,85 +107,117 @@ def process_landmarks(landmarks, w, h):
 
 # Functions for each state (KUDA2, TRANSISI, TENDANG, etc.)
 def kuda_kuda():
-    global position, feedback_kanan, feedback_kiri
+    global position, feedback, feedback, kuda
+    
+    ############## untuk keluar dari fungsi ini ##############
+    if crossing_leg or r_hip_angle < 140 or l_hip_angle < 140:
+        return True
+    ##########################################################
+
     if (l_ankle[1] < l_knee[1] and r_ankle[1] < r_knee[1] and l_ankle[1] < r_knee[1] and r_ankle[1] < l_knee[1]) or foot_distance < 140:
         return False
 
     if position == "left":
         if 100 < r_knee_angle < 150 and 150 < l_knee_angle < 180 :
-            feedback_kanan = "pas" 
-            feedback_kiri = "pas"
+            feedback = "pas" 
+            kuda = True
             return True
         elif r_knee_angle > 150:
-            feedback_kanan = "kaki kanan kurang nekuk"
+            feedback = "kaki kanan kurang nekuk"
             return False
         elif r_knee_angle < 100:
-            feedback_kiri = "kaki kanan terlalu nekuk"
+            feedback = "kaki kanan terlalu nekuk"
             return False
         elif l_knee_angle < 150:
-            feedback_kiri = "kaki kiri kurang lurus"
+            feedback = "kaki kiri kurang lurus"
             return False
         
     elif position == "right":
         if 100 < l_knee_angle < 150 and 150 < r_knee_angle < 180:
-            feedback_kanan = "pas" 
-            feedback_kiri = "pas"
+            feedback = "pas" 
+            kuda = True
             return True
         elif l_knee_angle > 150:
-            feedback_kiri = "kaki kiri kurang nekuk"
+            feedback = "kaki kiri kurang nekuk"
             return False
         elif l_knee_angle < 100:
-            feedback_kiri = "kaki kiri terlalu nekuk"
+            feedback = "kaki kiri terlalu nekuk"
             return False
         elif r_knee_angle < 150:
-            feedback_kanan = "kaki kanan kurang lurus"
+            feedback = "kaki kanan kurang lurus"
             return False
     
     return False
 
 def transisi():
-    global kick_type, feedback_kanan, feedback_kiri
+    global kick_type, feedback, feedback, transisi
+
+    ################### untuk keluar dari fungsi ini ###################
+    if foot_distance > 200:
+        return True
+    ####################################################################
+
     print(f"crossing_leg = {crossing_leg}")
     if crossing_leg:
         kick_type = "T kick"
         return True
+    
     else:
         kick_type = "front kick" if (hip_distance < 20 and shoulder_distance) < 30 else "sickle kick"
 
         if position == "right":
             if r_knee and r_hip and r_knee[1] <= r_hip[1] and r_knee_angle < 150 and r_hip_angle < 110:  # y-coordinates, smaller means higher
+                transisi = True
+                feedback = "pas"
                 return True
             elif r_knee_angle > 150:
-                feedback_kanan = "kaki kanan kurang nekuk"
+                feedback = "kaki kanan kurang nekuk"
                 return False
             elif r_hip_angle > 110:
-                feedback_kanan = "kaki kanan kurang naik"
-                return False
-        elif position == "left":
-            if l_knee and l_hip and l_knee[1] <= l_hip[1] and l_knee_angle < 150 and l_hip_angle < 110:  # y-coordinates, smaller means higher
-                return True
-            elif l_knee_angle > 150:
-                feedback_kiri = "kaki kiri kurang nekuk"
-                return False
-            elif l_hip_angle > 110:
-                feedback_kiri = "kaki kiri kurang naik"
+                feedback = "kaki kanan kurang naik"
                 return False
             
+        elif position == "left":
+            if l_knee and l_hip and l_knee[1] <= l_hip[1] and l_knee_angle < 150 and l_hip_angle < 110:  # y-coordinates, smaller means higher
+                transisi = True
+                feedback = "pas"
+                return True
+            elif l_knee_angle > 150:
+                feedback = "kaki kiri kurang nekuk"
+                return False
+            elif l_hip_angle > 110:
+                feedback = "kaki kiri kurang naik"
+                return False
     return False
 
 def kick():
-    global feedback_kanan, feedback_kiri
-    if l_knee_angle < 160:
-        feedback_kiri = "kaki kiri kurang lurus"
+    global feedback, feedback, tendang
+
+    ######### untuk keluar dari fungsi ini ###########
+    if back():
+        return True
+    ##################################################
+
+    if l_knee_angle > 160 and r_knee_angle > 160:
+        tendang = True
+        feedback = "pas"
+        return True
+    elif l_knee_angle < 160:
+        feedback = "kaki kiri kurang lurus"
         return False
-    if r_knee_angle < 160:
-        feedback_kanan = "kaki kanan kurang lurus"
+    elif r_knee_angle < 160:
+        feedback = "kaki kanan kurang lurus"
         return False
     
-    # Add additional conditions for other kick types if necessary
     return False
 
-def back(position):
+def back():
+    global kuda, transisi, tendang
+
+    kuda = False
+    transisi = False
+    tendang = False
+
     if l_knee_angle > 150 and r_knee_angle > 150 and foot_distance > 150 and shoulder_distance > 40 and hip_distance > 40 and crossing_leg == False:
         if position == "right" :
             if r_hip[0] < l_hip[0] and r_ankle[0] < l_ankle[0]:
@@ -201,9 +236,12 @@ def main():
     leg = False
     current_state = State.INITIAL
     tendangan_counter = 0  # Counter untuk menghitung jumlah tendangan
+    tendang_benar_count = 0
+    tendang_salah_count = 0
+    state = "none"
 
     # Menggunakan video file sebagai input
-    video_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/raw_video/Tendangan_Sabit_Kiri.mp4"
+    video_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/raw_video/Depan_Kanan.mp4"
     output_folder = "B:/Abiyu/PA/silat-kicking-counter-asisst/output_video/"
     
     # Ensure output folder exists
@@ -221,13 +259,13 @@ def main():
     # Define the codec and create VideoWriter object to save video as MP4
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for .mp4 files
     fps = int(cap.get(cv2.CAP_PROP_FPS))
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) // 2)  # Setengah lebar
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) // 2)  # Setengah tinggi
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # Setengah lebar
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))  # Setengah tinggi
     
     # Video writer object
     out = cv2.VideoWriter(output_path, fourcc, 20, (1080, 607))
 
-    frame_skip = 2  # Skipping every 3rd frame to improve performance
+    frame_skip = 1  # Skipping every 3rd frame to improve performance
     frame_count = 0
 
     # Set up MediaPipe Pose
@@ -273,40 +311,42 @@ def main():
 
                     case State.KUDA2:
                         print("Kuda!")
+                        state = "kuda-kuda"
                         if kuda_kuda():
                             current_state = State.TRANSISI
 
                     case State.TRANSISI:
-                        print("Transisi!")
+                        # print("Transisi!")
+                        state = "Transisi"
                         if transisi():
                             current_state = State.TENDANG
 
                     case State.TENDANG:
-                        print("Tendang!")
+                        state = "Tendang"
+                        # print("Tendang!")
                         if kick():
                             tendangan_counter += 1
+                            if kuda and transisi and tendang:
+                                tendang_benar_count += 1
+                            else :
+                                tendang_salah_count += 1
                             print(f"Tendangan terdeteksi! Total tendangan: {tendangan_counter}")
                             current_state = State.AKHIR
 
                     case State.AKHIR:
+                        state = "Back"
                         print("back!")
                         if back(position):
                             current_state = State.INITIAL
 
             # Display the frame with data
-            cv2.putText(resized_frame, f"l_knee_angle: {l_knee_angle:.2f}", (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-            cv2.putText(resized_frame, f"r_knee_angle: {r_knee_angle:.2f}", (30, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-            cv2.putText(resized_frame, f"l_hip_angle: {l_hip_angle:.2f}", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-            cv2.putText(resized_frame, f"r_hip_angle: {r_hip_angle:.2f}", (30, 170), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-            cv2.putText(resized_frame, f"foot_distance: {foot_distance:.2f}", (30, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-            cv2.putText(resized_frame, f"hip_distance: {hip_distance:.2f}", (30, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-            cv2.putText(resized_frame, f"shoulder_distance: {shoulder_distance:.2f}", (30, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-
-            cv2.putText(resized_frame, f"Crossing Leg: {'Yes' if crossing_leg else 'No'}", (30, 300), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-            cv2.putText(resized_frame, f"Tendangan: {tendangan_counter}", (650, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-            cv2.putText(resized_frame, f"position: {position}", (650, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-            cv2.putText(resized_frame, f"kick type: {kick_type}", (650, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-            cv2.putText(resized_frame, f"facing: {facing}", (650, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+            cv2.putText(resized_frame, f"jumlah Tendangan: {tendangan_counter}", (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+            cv2.putText(resized_frame, f"jumlah Tendangan benar: {tendang_benar_count}", (30, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+            cv2.putText(resized_frame, f"jumlah Tendangan salah: {tendang_salah_count}", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+            cv2.putText(resized_frame, f"tipe tendangan: {position} {kick_type}", (30, 170), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+            cv2.putText(resized_frame, f"State: {state}", (30, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+            cv2.putText(resized_frame, f"kesalahan: {feedback}", (30, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+            cv2.putText(resized_frame, f"jarak kaki: {foot_distance}", (30, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
 
             # Display the frame
             cv2.imshow('Silat Kick Counter', resized_frame)
