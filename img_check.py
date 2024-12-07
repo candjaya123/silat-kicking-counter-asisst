@@ -108,19 +108,19 @@ def main():
                 mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                 mp_drawing.DrawingSpec(color=(66, 245, 230), thickness=2, circle_radius=2)
             )
-
+            
         # Display the angle, distance, and slope information on the image
-        cv2.putText(frame, f"l_knee_angle: {l_knee_angle:.2f}", (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        cv2.putText(frame, f"r_knee_angle: {r_knee_angle:.2f}", (30, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        cv2.putText(frame, f"foot_distance: {foot_distance:.2f}", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        cv2.putText(frame, f"l_hip_angle: {l_hip_angle:.2f}", (30, 170), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        cv2.putText(frame, f"r_hip_angle: {r_hip_angle:.2f}", (30, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        cv2.putText(frame, f"shoulder_slope: {shoulder_slope:.2f}", (30, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        cv2.putText(frame, f"hip_slope: {hip_slope:.2f}", (30, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        cv2.putText(frame, f"shoulder_distance: {shoulder_distance:.2f}", (30, 290), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        cv2.putText(frame, f"hip_distance: {hip_distance:.2f}", (30, 320), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        cv2.putText(frame, f"facing: {facing}", (30, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        cv2.putText(frame, f"Crossing Leg: {'Yes' if crossing_leg else 'No'}", (30, 380), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        # cv2.putText(frame, f"l_knee_angle: {l_knee_angle:.2f}", (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # cv2.putText(frame, f"r_knee_angle: {r_knee_angle:.2f}", (30, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # cv2.putText(frame, f"foot_distance: {foot_distance:.2f}", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # cv2.putText(frame, f"l_hip_angle: {l_hip_angle:.2f}", (30, 170), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # cv2.putText(frame, f"r_hip_angle: {r_hip_angle:.2f}", (30, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # cv2.putText(frame, f"shoulder_slope: {shoulder_slope:.2f}", (30, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # cv2.putText(frame, f"hip_slope: {hip_slope:.2f}", (30, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # cv2.putText(frame, f"shoulder_distance: {shoulder_distance:.2f}", (30, 290), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # cv2.putText(frame, f"hip_distance: {hip_distance:.2f}", (30, 320), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # cv2.putText(frame, f"facing: {facing}", (30, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # cv2.putText(frame, f"Crossing Leg: {'Yes' if crossing_leg else 'No'}", (30, 380), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         # cv2.putText(frame, f"l_ankle = {l_ankle[1]:.2f} | l_knee = {l_knee[1]:.2f}", (30, 410), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         # cv2.putText(frame, f"r_ankle = {r_ankle[1]:.2f} | r_knee = {r_knee[1]:.2f}", (30, 440), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 

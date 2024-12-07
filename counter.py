@@ -47,7 +47,7 @@ mp_pose = mp.solutions.pose
 
 # Helper function to calculate all necessary landmarks and store globally
 def process_landmarks(landmarks, w, h):
-    global l_knee_angle, r_knee_angle, r_hip_angle, l_hip_angle, foot_distance, shoulder_slope, hip_slope, shoulder_distance, crossing_leg, hip_distance, facing, position,l_hip, l_knee, l_ankle
+    global l_knee_angle, r_knee_angle, r_hip_angle, l_hip_angle, foot_distance, shoulder_slope, hip_slope, shoulder_distance, crossing_leg, hip_distance, facing,l_hip, l_knee, l_ankle
     global l_hip, l_knee, l_ankle, r_hip, r_knee, r_ankle
     
     # Left side landmarks
@@ -100,19 +100,22 @@ def process_landmarks(landmarks, w, h):
     else:
         facing = "left"   # Nose closer to right shoulder, facing left
 
+
+
+# Functions for each state (KUDA2, TRANSISI, TENDANG, etc.)
+def kuda_kuda():
+    global feedback, feedback, kuda, position
+
+    ############## untuk keluar dari fungsi ini ##############
+    if crossing_leg or r_hip_angle < 140 or l_hip_angle < 140:
+        return True
+    ##########################################################
+    
     if r_knee[0] > l_knee[0] :
         position = "left" if facing == "right" else "right"
     elif l_knee[0] > r_knee[0] :
         position = "right" if facing == "right" else "left"
 
-# Functions for each state (KUDA2, TRANSISI, TENDANG, etc.)
-def kuda_kuda():
-    global position, feedback, feedback, kuda
-    
-    ############## untuk keluar dari fungsi ini ##############
-    if crossing_leg or r_hip_angle < 140 or l_hip_angle < 140:
-        return True
-    ##########################################################
 
     if (l_ankle[1] < l_knee[1] and r_ankle[1] < r_knee[1] and l_ankle[1] < r_knee[1] and r_ankle[1] < l_knee[1]) or foot_distance < 140:
         return False
@@ -149,7 +152,7 @@ def kuda_kuda():
     
     return False
 
-def transisi():
+def transition():
     global kick_type, feedback, feedback, transisi
 
     ################### untuk keluar dari fungsi ini ###################
@@ -163,7 +166,8 @@ def transisi():
         return True
     
     else:
-        kick_type = "front kick" if (hip_distance < 20 and shoulder_distance) < 30 else "sickle kick"
+        if l_ankle[1] < 600 or r_ankle[1] < 600:
+            kick_type = "front kick" if hip_distance < 20 and shoulder_distance < 30 else "sickle kick"
 
         if position == "right":
             if r_knee and r_hip and r_knee[1] <= r_hip[1] and r_knee_angle < 150 and r_hip_angle < 110:  # y-coordinates, smaller means higher
@@ -227,6 +231,24 @@ def back():
                 return True
     return False
 
+def draw(frame, text, text_x, text_y, text_color, rect_color):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1
+    font_thickness = 2
+
+    # Get text size
+    text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
+    rect_x1 = text_x - 10
+    rect_y1 = text_y - text_size[1] - 10
+    rect_x2 = text_x + text_size[0] + 10
+    rect_y2 = text_y + 10
+
+    cv2.rectangle(frame, (rect_x1, rect_y1), (rect_x2, rect_y2), rect_color, -1)
+
+    # Put the text on top of the rectangle
+    cv2.putText(frame, text, (text_x, text_y), font, font_scale, text_color, font_thickness)
+
+
 # Main function
 def main():
 
@@ -241,7 +263,7 @@ def main():
     state = "none"
 
     # Menggunakan video file sebagai input
-    video_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/raw_video/Depan_Kanan.mp4"
+    video_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/raw_video/Tendangan_Depan_Kanan2.mp4"
     output_folder = "B:/Abiyu/PA/silat-kicking-counter-asisst/output_video/"
     
     # Ensure output folder exists
@@ -263,10 +285,12 @@ def main():
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))  # Setengah tinggi
     
     # Video writer object
-    out = cv2.VideoWriter(output_path, fourcc, 20, (1080, 607))
+    out = cv2.VideoWriter(output_path, fourcc, 20, (1280, 720))
 
-    frame_skip = 1  # Skipping every 3rd frame to improve performance
+    frame_skip = 2  # Skipping every 3rd frame to improve performance
+    fps = 0
     frame_count = 0
+    start_time = time.time()
 
     # Set up MediaPipe Pose
     mp_pose = mp.solutions.pose
@@ -277,8 +301,15 @@ def main():
                 print("Tidak dapat membaca frame.")
                 break
             
-            resized_frame = cv2.resize(frame, (frame_width, frame_height))
+            
+            resized_frame = cv2.resize(frame, (1280, 720))
             frame_count += 1
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= 1.0:
+                fps = frame_count / elapsed_time
+                frame_count = 0
+                start_time = time.time()
+
             if frame_count % frame_skip != 0:
                 continue  # Skip frames to improve performance
 
@@ -318,7 +349,7 @@ def main():
                     case State.TRANSISI:
                         # print("Transisi!")
                         state = "Transisi"
-                        if transisi():
+                        if transition():
                             current_state = State.TENDANG
 
                     case State.TENDANG:
@@ -336,17 +367,35 @@ def main():
                     case State.AKHIR:
                         state = "Back"
                         print("back!")
-                        if back(position):
+                        if back():
                             current_state = State.INITIAL
 
             # Display the frame with data
-            cv2.putText(resized_frame, f"jumlah Tendangan: {tendangan_counter}", (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
-            cv2.putText(resized_frame, f"jumlah Tendangan benar: {tendang_benar_count}", (30, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
-            cv2.putText(resized_frame, f"jumlah Tendangan salah: {tendang_salah_count}", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
-            cv2.putText(resized_frame, f"tipe tendangan: {position} {kick_type}", (30, 170), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
-            cv2.putText(resized_frame, f"State: {state}", (30, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
-            cv2.putText(resized_frame, f"kesalahan: {feedback}", (30, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
-            cv2.putText(resized_frame, f"jarak kaki: {foot_distance}", (30, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+            c_text_color = (0, 255, 255) #warna text di tengah
+            r_text_color = (0, 255, 255) #warna text di kanan
+            l_text_color = (0, 255, 255) #warna text di kiri
+
+            c_rect_color = (0, 0, 0) #warna rect di tengah
+            r_rect_color = (0, 0, 0) #warna rect di kanan
+            l_rect_color = (0, 0, 0) #warna rect di kiri
+
+            draw(resized_frame, f"feedback: {feedback}", 400, 30, c_text_color, c_rect_color) 
+
+            draw(resized_frame, f"FPS: {fps:.0f}", 20, 30, l_text_color, l_rect_color)
+
+            draw(resized_frame, f"jumlah Tendangan: {tendangan_counter}", 20, 100, l_text_color, l_rect_color)
+            draw(resized_frame, f"Tendangan benar : {tendang_benar_count}", 20, 140, l_text_color, l_rect_color)
+            draw(resized_frame, f"Tendangan salah : {tendang_salah_count}", 20, 180, l_text_color, l_rect_color)
+            draw(resized_frame, f"State: {state}", 20, 220, l_text_color, l_rect_color)
+
+            draw(resized_frame, f"r_knee_angle     : {r_knee_angle:.0f}", 900, 100, r_text_color, r_rect_color)
+            draw(resized_frame, f"l_knee_angle     : {l_knee_angle:.0f}", 900, 140, r_text_color, r_rect_color)
+            draw(resized_frame, f"r_hip_angle      : {r_hip_angle:.0f}", 900, 180, r_text_color, r_rect_color)
+            draw(resized_frame, f"l_hip_angle      : {l_hip_angle:.0f}", 900, 220, r_text_color, r_rect_color)
+            draw(resized_frame, f"foot_distance    : {foot_distance:.0f}", 900, 260, r_text_color, r_rect_color)
+            draw(resized_frame, f"hip_distance     : {hip_distance:.0f}", 900, 300, r_text_color, r_rect_color)
+            draw(resized_frame, f"shoulder_distance: {shoulder_distance:.0f}", 900, 340, r_text_color, r_rect_color)
+            draw(resized_frame, f"crossing_leg     : {crossing_leg}", 900, 380, r_text_color, r_rect_color)
 
             # Display the frame
             cv2.imshow('Silat Kick Counter', resized_frame)
