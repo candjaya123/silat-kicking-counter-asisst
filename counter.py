@@ -5,6 +5,7 @@ import mediapipe as mp
 import imutils
 from module import tool as get
 from module.tool import Play_buzzer
+import threading
 import enum
 
 # Define states for the FSM
@@ -107,7 +108,7 @@ def kuda_kuda():
     global feedback, feedback, kuda, position
 
     ############## untuk keluar dari fungsi ini ##############
-    if crossing_leg or r_hip_angle < 140 or l_hip_angle < 140:
+    if crossing_leg or r_knee_angle < 140 or l_knee_angle < 140:
         return True
     ##########################################################
     
@@ -344,6 +345,7 @@ def main():
                         print("Kuda!")
                         state = "kuda-kuda"
                         if kuda_kuda():
+                            threading.Thread(target=Play_buzzer, daemon=True).start()
                             current_state = State.TRANSISI
 
                     case State.TRANSISI:

@@ -3,7 +3,7 @@ from playsound import playsound
 
 def Play_buzzer():
     try:
-        playsound('D:\PENS\PROYEK AKHIR\CODING\\buzzer1.mp3')
+        playsound('./buzzer1.mp3')
     except Exception as e:
         print(f"Error playing buzzer sound: {e}")
 
