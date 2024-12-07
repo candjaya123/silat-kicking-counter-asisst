@@ -161,7 +161,7 @@ def transition():
         return True
     ####################################################################
 
-    print(f"crossing_leg = {crossing_leg}")
+    # print(f"crossing_leg = {crossing_leg}")
     if crossing_leg:
         kick_type = "T kick"
         return True
@@ -199,7 +199,7 @@ def kick():
     global feedback, feedback, tendang
 
     ######### untuk keluar dari fungsi ini ###########
-    if back():
+    if back(True):
         return True
     ##################################################
 
@@ -216,14 +216,15 @@ def kick():
     
     return False
 
-def back():
+def back(skip):
     global kuda, transisi, tendang
 
-    kuda = False
-    transisi = False
-    tendang = False
+    if skip == False:
+        kuda = False
+        transisi = False
+        tendang = False
 
-    if l_knee_angle > 150 and r_knee_angle > 150 and foot_distance > 150 and shoulder_distance > 40 and hip_distance > 40 and crossing_leg == False:
+    if l_knee_angle > 150 and r_knee_angle > 150 and foot_distance > 150 and crossing_leg == False:
         if position == "right" :
             if r_hip[0] < l_hip[0] and r_ankle[0] < l_ankle[0]:
                 return True
@@ -252,7 +253,6 @@ def draw(frame, text, text_x, text_y, text_color, rect_color):
 
 # Main function
 def main():
-
     global l_knee_angle, r_knee_angle, r_hip_angle, foot_distance, r_knee, r_hip, facing
     face = False
     body = False
@@ -262,6 +262,9 @@ def main():
     tendang_benar_count = 0
     tendang_salah_count = 0
     state = "none"
+    feedback_kuda = "none"
+    feedback_transisi = "none"
+    feedback_kick = "none"
 
     # Menggunakan video file sebagai input
     video_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/raw_video/Tendangan_Depan_Kanan2.mp4"
@@ -297,6 +300,9 @@ def main():
     mp_pose = mp.solutions.pose
     with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
+            print(f'KUDAAAAAAAAAAAAAAAAAAAAAAAA = {kuda}')
+            print(f'TRANSISIIIIIIIIIIIIIIIIIIII = {transisi}')
+            print(f'KICKKKKKKKKKKKKKKKKKKKKKKKK = {tendang}')
             ret, frame = cap.read()
             if not ret:
                 print("Tidak dapat membaca frame.")
@@ -342,9 +348,10 @@ def main():
                             current_state = State.KUDA2
 
                     case State.KUDA2:
-                        print("Kuda!")
+                        # print("Kuda!")
                         state = "kuda-kuda"
                         if kuda_kuda():
+                            feedback_kuda = feedback
                             threading.Thread(target=Play_buzzer, daemon=True).start()
                             current_state = State.TRANSISI
 
@@ -352,12 +359,14 @@ def main():
                         # print("Transisi!")
                         state = "Transisi"
                         if transition():
+                            feedback_transisi = feedback
                             current_state = State.TENDANG
 
                     case State.TENDANG:
                         state = "Tendang"
                         # print("Tendang!")
                         if kick():
+                            feedback_kick = feedback
                             tendangan_counter += 1
                             if kuda and transisi and tendang:
                                 tendang_benar_count += 1
@@ -369,7 +378,7 @@ def main():
                     case State.AKHIR:
                         state = "Back"
                         print("back!")
-                        if back():
+                        if back(False):
                             current_state = State.INITIAL
 
             # Display the frame with data
@@ -381,7 +390,9 @@ def main():
             r_rect_color = (0, 0, 0) #warna rect di kanan
             l_rect_color = (0, 0, 0) #warna rect di kiri
 
-            draw(resized_frame, f"feedback: {feedback}", 400, 30, c_text_color, c_rect_color) 
+            draw(resized_frame, f"kuda: {feedback_kuda}", 400, 30, c_text_color, c_rect_color) 
+            draw(resized_frame, f"transisi: {feedback_transisi}", 400, 70, c_text_color, c_rect_color) 
+            draw(resized_frame, f"kick: {feedback_kick}", 400, 110, c_text_color, c_rect_color) 
 
             draw(resized_frame, f"FPS: {fps:.0f}", 20, 30, l_text_color, l_rect_color)
 
