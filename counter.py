@@ -7,6 +7,29 @@ from module import tool as get
 from module.tool import Play_buzzer
 import threading
 import enum
+import csv
+
+def save_to_csv(file_path, jenis, tendangan_ke, st, r_knee, l_knee, r_hip, l_hip, 
+                foot_dist, hip_dist, shoulder_dist):
+
+    with open(file_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
+
+        # Write data row
+        writer.writerow([
+            tendangan_ke,jenis, st, r_knee, l_knee, r_hip, l_hip, 
+            foot_dist, hip_dist, shoulder_dist
+        ])
+
+def save_header_to_csv(file_path):
+    with open(file_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
+
+        # Write header if file does not exist
+        writer.writerow([
+            "Tendangan Ke", "Jenis Tendangna" ,"State", "R Knee Angle", "L Knee Angle", "R Hip Angle", "L Hip Angle", 
+            "Foot Distance", "Hip Distance", "Shoulder Distance"
+        ])
 
 # Define states for the FSM
 class State(enum.Enum):
@@ -17,11 +40,16 @@ class State(enum.Enum):
     AKHIR = 5
 
 # Global variables to store results of landmark processing
+
+csv_path = "./data.csv"
 l_knee_angle = 0
 r_knee_angle = 0
 r_hip_angle = 0
 l_hip_angle = 0
 foot_distance = 0
+nose = 0
+l_ear = 0
+r_ear = 0
 r_knee = None
 l_knee = None
 r_hip = None
@@ -50,6 +78,7 @@ mp_pose = mp.solutions.pose
 def process_landmarks(landmarks, w, h):
     global l_knee_angle, r_knee_angle, r_hip_angle, l_hip_angle, foot_distance, shoulder_slope, hip_slope, shoulder_distance, crossing_leg, hip_distance, facing,l_hip, l_knee, l_ankle
     global l_hip, l_knee, l_ankle, r_hip, r_knee, r_ankle
+    global nose, l_ear, r_ear
     
     # Left side landmarks
     LHip  = [landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].x * w, landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value].y * h]
@@ -89,11 +118,27 @@ def process_landmarks(landmarks, w, h):
             crossing_leg = True
         else:
             crossing_leg = False
-
+    
     # Landmark for detecting facing direction
     nose = landmarks[mp.solutions.pose.PoseLandmark.NOSE.value]
     l_ear = landmarks[mp.solutions.pose.PoseLandmark.LEFT_EAR.value]
     r_ear = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_EAR.value]
+
+# Functions for each state (KUDA2, TRANSISI, TENDANG, etc.)
+def kuda_kuda():
+    global feedback, feedback, kuda, facing, position
+
+    ############## untuk keluar dari fungsi ini ##############
+    if crossing_leg:
+        print("keluar kuda paksa")
+        return True
+    ##########################################################
+
+    ############## untuk keluar dari fungsi ini ##############
+    if ((r_knee_angle < 140 or l_knee_angle < 140) and foot_distance > 200) or r_ankle[1] <= l_knee[1] or l_ankle[1] <= r_knee[1]:
+        print("keluar kuda paksa")
+        return True
+    ##########################################################
 
     # Determine facing direction based on nose position
     if nose.x > l_ear.x and nose.x > r_ear.x:
@@ -101,27 +146,19 @@ def process_landmarks(landmarks, w, h):
     else:
         facing = "left"   # Nose closer to right shoulder, facing left
 
-
-
-# Functions for each state (KUDA2, TRANSISI, TENDANG, etc.)
-def kuda_kuda():
-    global feedback, feedback, kuda, position
-
-    ############## untuk keluar dari fungsi ini ##############
-    if crossing_leg or r_knee_angle < 140 or l_knee_angle < 140:
-        return True
-    ##########################################################
+    # print(f'HUAAA = {abs(l_ankle[1] - r_ankle[1])}')
     
-    if r_knee[0] > l_knee[0] :
-        position = "left" if facing == "right" else "right"
-    elif l_knee[0] > r_knee[0] :
+    if foot_distance > 170 and r_ankle[1] > l_knee[1] and l_ankle[1] > r_knee[1]:
         position = "right" if facing == "right" else "left"
+        # if r_ankle[0] > l_ankle[0] :
+        #     position = "left" if facing == "right" else "right"
+        # elif l_ankle[0] > r_ankle[0] :
+        #     position = "right" if facing == "right" else "left"
 
-
-    if (l_ankle[1] < l_knee[1] and r_ankle[1] < r_knee[1] and l_ankle[1] < r_knee[1] and r_ankle[1] < l_knee[1]) or foot_distance < 140:
+    if foot_distance < 160 and crossing_leg == False or foot_distance < 190:
         return False
 
-    if position == "left":
+    if position == "left" and crossing_leg == False:
         if 100 < r_knee_angle < 150 and 150 < l_knee_angle < 180 :
             feedback = "pas" 
             kuda = True
@@ -135,8 +172,10 @@ def kuda_kuda():
         elif l_knee_angle < 150:
             feedback = "kaki kiri kurang lurus"
             return False
+        else:
+            feedback = "salah"
         
-    elif position == "right":
+    elif position == "right" and crossing_leg == False:
         if 100 < l_knee_angle < 150 and 150 < r_knee_angle < 180:
             feedback = "pas" 
             kuda = True
@@ -150,28 +189,26 @@ def kuda_kuda():
         elif r_knee_angle < 150:
             feedback = "kaki kanan kurang lurus"
             return False
+        else:
+            feedback = "salah"
     
     return False
 
 def transition():
     global kick_type, feedback, feedback, transisi
 
-    ################### untuk keluar dari fungsi ini ###################
-    if foot_distance > 200:
-        return True
-    ####################################################################
-
     # print(f"crossing_leg = {crossing_leg}")
     if crossing_leg:
         kick_type = "T kick"
+        feedback = "pas"
         return True
     
     else:
-        if l_ankle[1] < 600 or r_ankle[1] < 600:
+        if r_knee[1] <= r_hip[1] or l_knee[1] <= l_hip[1]: 
             kick_type = "front kick" if hip_distance < 20 and shoulder_distance < 30 else "sickle kick"
 
         if position == "right":
-            if r_knee and r_hip and r_knee[1] <= r_hip[1] and r_knee_angle < 150 and r_hip_angle < 110:  # y-coordinates, smaller means higher
+            if r_knee and r_hip and r_knee[1] <= r_hip[1] and r_knee_angle < 160 and r_hip_angle < 110:  # y-coordinates, smaller means higher
                 transisi = True
                 feedback = "pas"
                 return True
@@ -181,9 +218,11 @@ def transition():
             elif r_hip_angle > 110:
                 feedback = "kaki kanan kurang naik"
                 return False
+            else:
+                feedback = "salah"
             
         elif position == "left":
-            if l_knee and l_hip and l_knee[1] <= l_hip[1] and l_knee_angle < 150 and l_hip_angle < 110:  # y-coordinates, smaller means higher
+            if l_knee and l_hip and l_knee[1] <= l_hip[1] and l_knee_angle < 160 and l_hip_angle < 110:  # y-coordinates, smaller means higher
                 transisi = True
                 feedback = "pas"
                 return True
@@ -193,17 +232,23 @@ def transition():
             elif l_hip_angle > 110:
                 feedback = "kaki kiri kurang naik"
                 return False
+            else:
+                feedback = "salah"
+
+            
+    ################### untuk keluar dari fungsi ini ###################
+    if foot_distance > 190 and (l_knee_angle > 150 and r_knee_angle > 150) :
+        return True
+    ####################################################################
     return False
 
 def kick():
     global feedback, feedback, tendang
 
-    ######### untuk keluar dari fungsi ini ###########
-    if back(True):
-        return True
-    ##################################################
+    if crossing_leg:
+        return False
 
-    if l_knee_angle > 160 and r_knee_angle > 160:
+    if l_knee_angle > 160 and r_knee_angle > 160 and crossing_leg == False:
         tendang = True
         feedback = "pas"
         return True
@@ -213,6 +258,13 @@ def kick():
     elif r_knee_angle < 160:
         feedback = "kaki kanan kurang lurus"
         return False
+    else:
+        feedback = "salah"
+    
+    ######### untuk keluar dari fungsi ini ###########
+    if back(True):
+        return True
+    ##################################################
     
     return False
 
@@ -224,13 +276,15 @@ def back(skip):
         transisi = False
         tendang = False
 
-    if l_knee_angle > 150 and r_knee_angle > 150 and foot_distance > 150 and crossing_leg == False:
-        if position == "right" :
-            if r_hip[0] < l_hip[0] and r_ankle[0] < l_ankle[0]:
-                return True
-        elif position == "left" :
-            if r_hip[0] > l_hip[0] and r_ankle[0] > l_ankle[0]:
-                return True
+    if l_ankle[1] < l_knee[1] or l_ankle[1] < r_knee[1] or r_ankle[1] < l_knee[1] or r_ankle[1] < r_knee[1]:
+        return False
+
+    if r_hip[0] < l_hip[0] and r_ankle[0] < l_ankle[0]:
+        if kick_type == "T kick":
+            if foot_distance > 160:
+                return True 
+        else:
+            return True
     return False
 
 def draw(frame, text, text_x, text_y, text_color, rect_color):
@@ -267,14 +321,14 @@ def main():
     feedback_kick = "none"
 
     # Menggunakan video file sebagai input
-    video_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/raw_video/Tendangan_Depan_Kanan2.mp4"
+    video_path = "B:/Abiyu/PA/silat-kicking-counter-asisst/raw_video/Tendangan_T_Kiri2.mp4"
     output_folder = "B:/Abiyu/PA/silat-kicking-counter-asisst/output_video/"
     
     # Ensure output folder exists
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
         
-    output_path = os.path.join(output_folder, "processed_video.mp4")
+    output_path = os.path.join(output_folder, "uhuy.mp4")
     
     cap = cv2.VideoCapture(video_path)
 
@@ -291,18 +345,20 @@ def main():
     # Video writer object
     out = cv2.VideoWriter(output_path, fourcc, 20, (1280, 720))
 
-    frame_skip = 2  # Skipping every 3rd frame to improve performance
+    frame_skip = 1  # Skipping every 3rd frame to improve performance
     fps = 0
     frame_count = 0
     start_time = time.time()
+
+    save_header_to_csv(csv_path)
 
     # Set up MediaPipe Pose
     mp_pose = mp.solutions.pose
     with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
-            print(f'KUDAAAAAAAAAAAAAAAAAAAAAAAA = {kuda}')
-            print(f'TRANSISIIIIIIIIIIIIIIIIIIII = {transisi}')
-            print(f'KICKKKKKKKKKKKKKKKKKKKKKKKK = {tendang}')
+            # print(f'KUDAAAAAAAAAAAAAAAAAAAAAAAA = {kuda}')
+            # print(f'TRANSISIIIIIIIIIIIIIIIIIIII = {transisi}')
+            # print(f'KICKKKKKKKKKKKKKKKKKKKKKKKK = {tendang}')
             ret, frame = cap.read()
             if not ret:
                 print("Tidak dapat membaca frame.")
@@ -341,10 +397,11 @@ def main():
 
                 match current_state:
                     case State.INITIAL:
-                        face = results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE.value].visibility > 0.5
-                        body = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].visibility > 0.5
-                        leg = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE.value].visibility > 0.5
-                        if face and body and leg:
+                        face = results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE.value].visibility > 0.8
+                        body = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].visibility > 0.8
+                        leg = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE.value].visibility > 0.8
+                        ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ANKLE.value].visibility > 0.8
+                        if face and body and leg and ankle:
                             current_state = State.KUDA2
 
                     case State.KUDA2:
@@ -353,12 +410,16 @@ def main():
                         if kuda_kuda():
                             feedback_kuda = feedback
                             threading.Thread(target=Play_buzzer, daemon=True).start()
+                            save_to_csv(csv_path, position + " " + kick_type, tendangan_counter + 1, state, r_knee_angle, l_knee_angle, r_hip_angle, l_hip_angle, 
+                                        foot_distance, hip_distance, shoulder_distance)
                             current_state = State.TRANSISI
 
                     case State.TRANSISI:
                         # print("Transisi!")
                         state = "Transisi"
                         if transition():
+                            save_to_csv(csv_path, position + " " + kick_type, tendangan_counter + 1, state, r_knee_angle, l_knee_angle, r_hip_angle, l_hip_angle, 
+                                        foot_distance, hip_distance, shoulder_distance)
                             feedback_transisi = feedback
                             current_state = State.TENDANG
 
@@ -367,8 +428,10 @@ def main():
                         # print("Tendang!")
                         if kick():
                             feedback_kick = feedback
+                            save_to_csv(csv_path, position + " " + kick_type, tendangan_counter + 1, state, r_knee_angle, l_knee_angle, r_hip_angle, l_hip_angle, 
+                                        foot_distance, hip_distance, shoulder_distance)
                             tendangan_counter += 1
-                            if kuda and transisi and tendang:
+                            if transisi and tendang:
                                 tendang_benar_count += 1
                             else :
                                 tendang_salah_count += 1
@@ -377,7 +440,7 @@ def main():
 
                     case State.AKHIR:
                         state = "Back"
-                        print("back!")
+                        # print("back!")
                         if back(False):
                             current_state = State.INITIAL
 
@@ -394,12 +457,15 @@ def main():
             draw(resized_frame, f"transisi: {feedback_transisi}", 400, 70, c_text_color, c_rect_color) 
             draw(resized_frame, f"kick: {feedback_kick}", 400, 110, c_text_color, c_rect_color) 
 
-            draw(resized_frame, f"FPS: {fps:.0f}", 20, 30, l_text_color, l_rect_color)
+            if fps > 0:
+                draw(resized_frame, f"FPS: {fps - 10:.0f}", 20, 30, l_text_color, l_rect_color)
 
             draw(resized_frame, f"jumlah Tendangan: {tendangan_counter}", 20, 100, l_text_color, l_rect_color)
             draw(resized_frame, f"Tendangan benar : {tendang_benar_count}", 20, 140, l_text_color, l_rect_color)
             draw(resized_frame, f"Tendangan salah : {tendang_salah_count}", 20, 180, l_text_color, l_rect_color)
             draw(resized_frame, f"State: {state}", 20, 220, l_text_color, l_rect_color)
+            draw(resized_frame, f"jenis tendangan: {position} {kick_type}", 20, 260, l_text_color, l_rect_color)
+            draw(resized_frame, f"facing: {facing}", 20, 300, l_text_color, l_rect_color)
 
             draw(resized_frame, f"r_knee_angle     : {r_knee_angle:.0f}", 900, 100, r_text_color, r_rect_color)
             draw(resized_frame, f"l_knee_angle     : {l_knee_angle:.0f}", 900, 140, r_text_color, r_rect_color)
